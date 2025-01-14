@@ -4,8 +4,8 @@ from rest_framework import viewsets, generics, mixins
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
-from .models import MenuItem
-from .serializers import MenuItemSerializer, UserSerializer
+from .models import MenuItem, Cart
+from .serializers import MenuItemSerializer, UserSerializer, CartSerializer
 from .permissions import IsManager
 
 class MenuItemsView(viewsets.ModelViewSet):
@@ -21,9 +21,7 @@ class MenuItemsView(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
     
 User = get_user_model()
-class GroupView(mixins.CreateModelMixin,
-                   mixins.RetrieveModelMixin,
-                   mixins.DestroyModelMixin,
+class GroupView(mixins.RetrieveModelMixin,
                    mixins.ListModelMixin,
                    viewsets.GenericViewSet):
     queryset = User.objects.all()
@@ -60,3 +58,27 @@ class ManagersView(GroupView):
 
 class DeliveryCrewsView(GroupView):
     group = "Delivery crew"
+
+class CartView(generics.ListCreateAPIView):
+    serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Cart.objects.filter(user=self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        data['user'] = request.user.id
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def delete(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+class OrderView(viewsets.GenericViewSet):
+    pass

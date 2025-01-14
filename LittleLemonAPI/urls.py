@@ -9,4 +9,5 @@ router.register('groups/delivery-crew/users', views.DeliveryCrewsView, 'delivery
 
 urlpatterns = [
   path('', include(router.urls)),
+  path('cart/menu-items', views.CartView.as_view(), name='cart')
 ]
