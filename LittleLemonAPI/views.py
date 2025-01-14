@@ -33,13 +33,13 @@ class GroupView(mixins.CreateModelMixin,
 
     def get_queryset(self):
         if self.action == 'list' or self.action == 'retrieve':
-            queryset = User.objects.filter(groups__name='Manager')
+            queryset = User.objects.filter(groups__name=self.group)
         else:
             queryset = User.objects.all()
         return queryset
 
     def get_group(self):
-        group, _ = Group.objects.get_or_create(name='Manager')
+        group, _ = Group.objects.get_or_create(name=self.group)
         return group
     
     def create(self, request, *args, **kwargs):
