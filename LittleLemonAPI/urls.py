@@ -4,6 +4,7 @@ from . import views
 
 router = SimpleRouter()
 router.register('menu-items', views.MenuItemsView)
+router.register('groups/manager/users', views.ManagersView)
 
 urlpatterns = [
   path('', include(router.urls)),
