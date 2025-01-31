@@ -5,9 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework import status
 from rest_framework.response import Response
-from .models import MenuItem, Cart, Order, OrderItem
+from .models import MenuItem, Cart, Order, OrderItem, Category
 from .serializers import *
-from .permissions import IsManager, IsDeliveryCrew, IsCustomer
+from .permissions import IsManager, IsDeliveryCrew
 from datetime import date
 
 class MenuItemsView(viewsets.ModelViewSet):
@@ -15,7 +15,7 @@ class MenuItemsView(viewsets.ModelViewSet):
     serializer_class = MenuItemSerializer
     filterset_fields = ['featured', 'category']
     ordering_fields = ['featured', 'price']
-    search_fields = ['title']
+    search_fields = ['title', 'category__title']
     throttle_classes = [UserRateThrottle, AnonRateThrottle]
 
     def get_permissions(self):
@@ -25,6 +25,15 @@ class MenuItemsView(viewsets.ModelViewSet):
             permission_classes.append(IsManager)
 
         return [permission() for permission in permission_classes]
+    
+class CategoryView(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated, IsManager]
+    ordering_fields = ['title', 'slug']
+    search_fields = ['title', 'slug']
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
+
     
 User = get_user_model()
 class GroupView(mixins.RetrieveModelMixin,
@@ -70,7 +79,7 @@ class DeliveryCrewsView(GroupView):
 
 class CartView(generics.ListCreateAPIView):
     serializer_class = CartSerializer
-    permission_classes = (IsAuthenticated, IsCustomer)
+    permission_classes = (IsAuthenticated)
     filterset_fields = ['menuitem__featured', 'menuitem__category']
     ordering_fields = ['price', 'unit_price']
     search_fields = ['menuitem__title']
@@ -113,8 +122,6 @@ class OrderView(mixins.ListModelMixin,
     def get_permissions(self):
         permission_classes = [IsAuthenticated]
         permissionDict = {
-            'create': [IsCustomer],
-            'retrieve': [IsCustomer],
             'update': [IsManager],
             'partial_update': [IsManager|IsDeliveryCrew],
             'destroy': [IsManager] 
