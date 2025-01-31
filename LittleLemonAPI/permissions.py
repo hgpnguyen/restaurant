@@ -2,7 +2,7 @@ from rest_framework import permissions
 
 class IsManager(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.groups.filter(name='Manager').exists()
+        return request.user and (request.user.groups.filter(name='Manager').exists() or request.user.is_staff)
 
 class IsDeliveryCrew(permissions.BasePermission):
     def has_permission(self, request, view):

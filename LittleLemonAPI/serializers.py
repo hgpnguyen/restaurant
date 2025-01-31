@@ -6,7 +6,7 @@ from .models import MenuItem, Category, Cart, Order, OrderItem
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ('id', 'title')
+        fields = ('id', 'title', 'slug')
 
 class MenuItemSerializer(serializers.ModelSerializer):
 
@@ -26,7 +26,8 @@ class CartSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Cart
-        fields = '__all__'
+        fields = ['user', 'menuitem', 'unit_price', 'quantity', 'price']
+        read_only_fields = ('price',)
         validators = [
             UniqueTogetherValidator(
                 queryset=Cart.objects.all(),
@@ -35,15 +36,22 @@ class CartSerializer(serializers.ModelSerializer):
         ]
     
     def validate(self, attrs):
-        if attrs['price'] != attrs['quantity'] * attrs['unit_price']:
-            raise serializers.ValidationError('Price much equal unit_price * price')
-        return super().validate(attrs)
+        attrs['price'] = attrs['quantity'] * attrs['unit_price']
+        return attrs
 
 
+class OrderItemSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = OrderItem
+        fields = ('order', 'menuitem', 'quantity', 'unit_price', 'price')
 class OrderSerializer(serializers.ModelSerializer):
+
+    orderitem = OrderItemSerializer(many=True, read_only=True, source='order')
     class Meta:
         model = Order
-        fields = ('id', 'user', 'delivery_crew', 'status', 'total', 'date')
+        fields = ['id', 'user', 'delivery_crew', 
+                  'status', 'total', 'date', 'orderitem']
     
     def validate_delivery_crew(self, value):
         try:
@@ -61,15 +69,6 @@ class DeliveryOrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ('id', 'user', 'delivery_crew', 'status', 'total', 'date')
         read_only_fields = ('user', 'delivery_crew', 'total', 'date')
-    
-    def validate_status(self, value):
-        if not value:
-            raise serializers.ValidationError("You can only update the status to true")
-        return value
 
-class OrderItemSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = OrderItem
-        fields = ('order', 'menuitem', 'quantity', 'unit_price', 'price')
 
